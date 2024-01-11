@@ -1,8 +1,3 @@
-<script>
-	import { page } from '$app/stores';
-	const currentPath = $page.url.pathname;
-</script>
-
 <nav><a href="/"><figure>🚌</figure></a></nav>
 
 <style lang="postcss">

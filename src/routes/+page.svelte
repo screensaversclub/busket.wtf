@@ -85,7 +85,8 @@
 		<label for="buscode_input">Enter bus stop code:</label>
 		<div class="flex items-center gap-2">
 			<input
-				type="text"
+				type="number"
+				pattern="[0-9]*"
 				id="buscode_input"
 				placeholder="12129"
 				bind:value={buscode_input}
