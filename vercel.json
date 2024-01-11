@@ -1,0 +1,8 @@
+{
+	"crons": [
+		{
+			"path": "/api/update-bus-stop-info",
+			"schedule": "0 0/6 * * *"
+		}
+	]
+}
