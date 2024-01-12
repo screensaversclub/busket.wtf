@@ -12,6 +12,7 @@
 	let favBusStops: BusStop[] = [];
 
 	const fetchFavBusStops = async () => {
+		console.log($favs);
 		const fetchPromises = $favs.map((code) => {
 			return (async () => {
 				const r = await fetch(`/api/bus-stop/${code}`);

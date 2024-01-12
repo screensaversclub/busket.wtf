@@ -12,9 +12,9 @@
 
 <style lang="postcss">
 	:global(html) {
-		@apply bg-yellow-50;
+		@apply bg-[#FCF197];
 	}
 	div#flex-wrapper {
-		@apply h-full fixed flex flex-col justify-start w-full;
+		@apply h-full fixed flex flex-col justify-start w-full bg-yellow-50;
 	}
 </style>
