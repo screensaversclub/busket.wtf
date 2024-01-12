@@ -1,11 +1,32 @@
 <script lang="ts">
 	import type { BusStop } from '$lib/lta-payload-types';
+	import { favs } from '$lib/favs-store';
+	import { onMount } from 'svelte';
 
 	let buscode_input = '';
 	let searching = false;
 	let search_results: BusStop[] = [];
 
 	let search_timeout_id: ReturnType<typeof setTimeout>;
+
+	let favBusStops: BusStop[] = [];
+
+	const fetchFavBusStops = async () => {
+		const fetchPromises = $favs.map((code) => {
+			return (async () => {
+				const r = await fetch(`/api/bus-stop/${code}`);
+				const data = await r.json();
+				return data;
+			})();
+		});
+		favBusStops = (await Promise.all(fetchPromises))
+			.map((res) => (res.ok === true ? res.busStop : null))
+			.filter((a) => a !== null) as BusStop[];
+	};
+
+	onMount(() => {
+		fetchFavBusStops();
+	});
 
 	const search = async () => {
 		if (!/^[0-9]{2,5}$/.test(buscode_input)) {
@@ -102,32 +123,44 @@
 				}}>📍</button
 			>
 		</div>
-		<div
-			class={`results_wrapper ${
-				buscode_input !== '' || search_results.length !== 0 || searching ? 'show' : ''
-			}`}
-		>
-			{#if searching === true}
-				<p class="py-2 text-center">
-					<span>I'm looking...</span>
-				</p>
-			{:else if search_results.length === 0}
-				<p class="py-2 text-center">
-					<span>No results</span>
-				</p>
-			{:else}
+		{#if buscode_input !== '' || search_results.length !== 0 || searching}
+			<div class="results_wrapper show">
+				{#if searching === true}
+					<p class="py-2 text-center">
+						<span>I'm looking...</span>
+					</p>
+				{:else if search_results.length === 0}
+					<p class="py-2 text-center">
+						<span>No results</span>
+					</p>
+				{:else}
+					<ul>
+						{#each search_results as result (result.BusStopCode)}
+							<li>
+								<a href={`/stop/${result.BusStopCode}`}
+									><h4>{result.Description}<b>{result.BusStopCode}</b></h4>
+									<p>{result.RoadName}</p></a
+								>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+		{:else if favBusStops.length > 0}
+			<div class="fav_stops">
+				<h2>Favourites</h2>
 				<ul>
-					{#each search_results as result (result.BusStopCode)}
+					{#each favBusStops as stop (stop.BusStopCode)}
 						<li>
-							<a href={`/stop/${result.BusStopCode}`}
-								><h4>{result.Description}<b>{result.BusStopCode}</b></h4>
-								<p>{result.RoadName}</p></a
+							<a href={`/stop/${stop.BusStopCode}`}
+								><h4>{stop.Description}<b>{stop.BusStopCode}</b></h4>
+								<p>{stop.RoadName}</p></a
 							>
 						</li>
 					{/each}
 				</ul>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -146,40 +179,49 @@
 
 	.results_wrapper {
 		@apply absolute top-[calc(100%_+_5px)] left-[50%] max-w-[90vw] w-[600px] -translate-x-[50%] border border-yellow-500 rounded hidden bg-white shadow max-h-[50vh] overflow-y-scroll;
-
-		ul {
-			@apply block;
-
-			li {
-				a {
-					@apply bg-[transparent] block w-full py-1 border-b px-2;
-
-					&:hover,
-					&:active {
-						@apply bg-yellow-100;
-					}
-
-					h4 {
-						@apply text-lg font-medium flex justify-start items-center;
-					}
-					b {
-						@apply text-xs font-normal ml-3 bg-yellow-600 block py-1 px-2 text-white rounded;
-					}
-					p {
-						@apply text-sm;
-					}
-				}
-
-				&:last-child {
-					a {
-						@apply border-b-0;
-					}
-				}
-			}
-		}
 	}
 
 	.results_wrapper.show {
 		@apply block;
+	}
+
+	.fav_stops {
+		@apply absolute top-[calc(100%_+_5px)] left-[50%] max-w-[90vw] w-[600px] -translate-x-[50%] border border-yellow-500 rounded bg-white shadow max-h-[50vh] overflow-y-scroll;
+
+		h2 {
+			@apply text-sm text-center uppercase bg-yellow-500 text-yellow-800;
+		}
+	}
+
+	.results_wrapper ul,
+	.fav_stops ul {
+		@apply block;
+
+		li {
+			a {
+				@apply bg-[transparent] block w-full py-1 border-b px-2;
+
+				&:hover,
+				&:active {
+					@apply bg-yellow-100;
+				}
+
+				h4 {
+					@apply text-lg font-medium flex justify-start items-center;
+				}
+				b {
+					@apply text-xs font-normal ml-3 bg-yellow-600 block py-1 px-2 text-white rounded;
+				}
+				p {
+					@apply text-sm;
+				}
+			}
+
+			&:last-child {
+				a {
+					@apply border-b-0;
+				}
+			}
+		}
 	}
 </style>

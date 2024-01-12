@@ -7,7 +7,7 @@ export async function GET({ params }) {
 	try {
 		const { bus_stop_id } = params;
 
-		const busStopRecord = await redis.hgetall(bus_stop_id);
+		const busStopRecord = await redis.hgetall(`STOP_${bus_stop_id}`);
 
 		if (Object.keys(busStopRecord).length === 0) {
 			return json({ ok: false });

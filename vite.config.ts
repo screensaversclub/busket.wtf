@@ -9,7 +9,7 @@ export default defineConfig({
 			registerType: 'autoUpdate',
 			devOptions: { enabled: true },
 			manifest: {
-				theme_color: '#FCF197',
+				theme_color: '#fcf197',
 				icons: [
 					{
 						src: 'favicon.png'
