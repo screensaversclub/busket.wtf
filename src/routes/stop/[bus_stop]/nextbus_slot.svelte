@@ -5,19 +5,21 @@
 	export let arrival: BusStopArrival['Services'][number]['NextBus'];
 
 	$: arrivalDuration =
-		arrival === undefined
-			? null
+		arrival === undefined || arrival.EstimatedArrival === ''
+			? '-'
 			: intervalToDuration({
 					start: new Date(),
 					end: new Date(arrival.EstimatedArrival)
 				});
+
+	console.log(arrival?.EstimatedArrival);
 </script>
 
 <div class="flex items-center gap-2">
 	{#if arrival !== undefined}
 		<h4 class="w-8 text-lg text-center">
-			{arrivalDuration === null
-				? ''
+			{typeof arrivalDuration === 'string'
+				? '-'
 				: Math.max(0, arrivalDuration.minutes || 0) === 0
 					? 'Arr'
 					: Math.max(0, arrivalDuration.minutes || 0)}<br />
