@@ -133,7 +133,7 @@
 
 <style lang="postcss">
 	#wrapper {
-		@apply border flex-grow overflow-hidden relative;
+		@apply flex-grow overflow-hidden relative;
 	}
 
 	#interface {

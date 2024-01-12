@@ -8,6 +8,9 @@ dependencies:
   '@vercel/node':
     specifier: ^3.0.16
     version: 3.0.16
+  date-fns:
+    specifier: ^3.2.0
+    version: 3.2.0
   ioredis:
     specifier: ^5.3.2
     version: 5.3.2
@@ -2693,6 +2696,10 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
     dev: true
+
+  /date-fns@3.2.0:
+    resolution: {integrity: sha512-E4KWKavANzeuusPi0jUjpuI22SURAznGkx7eZV+4i6x2A+IZxAMcajgkvuDAU1bg40+xuhW1zRdVIIM/4khuIg==}
+    dev: false
 
   /debug@4.3.4:
     resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
