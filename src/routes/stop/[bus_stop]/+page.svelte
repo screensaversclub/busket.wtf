@@ -104,16 +104,25 @@
 						{#each data.arrival.Services as service (service.ServiceNo)}
 							<div class="p-2 bg-white border border-yellow-400 rounded">
 								<div class="grid grid-cols-4">
-									<div class="flex items-center px-4 gap-2">
+									<div class="flex items-center gap-2">
 										<b
-											class={`w-3 h-3 block rounded-full ${
+											class={`w-3 h-3 block relative rounded-full overflow-hidden -rotate-[45deg] ${
 												service.Operator === 'SBST'
-													? 'bg-purple-500'
+													? 'bg-[#891589]'
 													: service.Operator === 'SMRT'
-														? 'bg-red-500'
-														: 'bg-green-500'
+														? 'bg-[#E20D25]'
+														: 'bg-[#089649]'
 											}`}
-										/>
+											><b
+												class={`absolute w-full h-[50%] top-[50%] ${
+													service.Operator === 'SBST'
+														? 'bg-[#D93E25]'
+														: service.Operator === 'SMRT'
+															? 'bg-[#ccc]'
+															: 'bg-green-500'
+												}`}>&nbsp;</b
+											></b
+										>
 
 										<h2 class="text-xl font-medium">{service.ServiceNo}</h2>
 									</div>
