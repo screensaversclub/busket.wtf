@@ -7,12 +7,22 @@ export default defineConfig({
 		sveltekit(),
 		VitePWA({
 			registerType: 'autoUpdate',
-			devOptions: { enabled: true },
+			devOptions: { enabled: process.env.NODE_ENV !== 'production' },
 			manifest: {
+				name: 'Busket',
+				description: 'faster bus app',
 				theme_color: '#fcf197',
 				icons: [
 					{
-						src: 'favicon.png'
+						src: 'favicon.png',
+						sizes: '192x192',
+						type: 'image/png'
+					},
+
+					{
+						src: 'favicon.png',
+						sizes: '512x512',
+						type: 'image/png'
 					}
 				]
 			}
