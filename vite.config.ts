@@ -7,7 +7,7 @@ export default defineConfig({
 		sveltekit(),
 		VitePWA({
 			registerType: 'autoUpdate',
-			devOptions: { enabled: process.env.NODE_ENV !== 'production' },
+			// devOptions: { enabled: process.env.NODE_ENV !== 'production' },
 			manifest: {
 				name: 'Busket',
 				description: 'faster bus app',
