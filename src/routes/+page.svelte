@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { BusStop } from '$lib/lta-payload-types';
 	import { favs } from '$lib/favs-store';
-	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	let buscode_input = '';
 	let searching = false;
@@ -12,7 +12,6 @@
 	let favBusStops: BusStop[] = [];
 
 	const fetchFavBusStops = async () => {
-		console.log($favs);
 		const fetchPromises = $favs.map((code) => {
 			return (async () => {
 				const r = await fetch(`/api/bus-stop/${code}`);
@@ -25,9 +24,11 @@
 			.filter((a) => a !== null) as BusStop[];
 	};
 
-	onMount(() => {
-		fetchFavBusStops();
-	});
+	if (browser) {
+		setTimeout(() => {
+			fetchFavBusStops();
+		}, 1000);
+	}
 
 	const search = async () => {
 		if (!/^[0-9]{2,5}$/.test(buscode_input)) {
