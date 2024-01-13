@@ -8,6 +8,7 @@ export default defineConfig({
 		SvelteKitPWA({
 			manifest: {
 				name: 'Busket',
+				short_name: 'Busket',
 				description: 'faster bus app',
 				theme_color: '#fcf197',
 				icons: [
