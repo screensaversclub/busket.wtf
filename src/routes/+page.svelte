@@ -36,6 +36,7 @@
 			search_results = [];
 			return;
 		}
+
 		try {
 			const _r = await fetch(`/api/bus-stop-search/${buscode_input}`);
 			const data = await _r.json();
@@ -108,7 +109,7 @@
 		<label for="buscode_input">Enter bus stop code:</label>
 		<div class="flex items-center gap-2">
 			<input
-				type="number"
+				type="string"
 				pattern="[0-9]*"
 				id="buscode_input"
 				placeholder="12129"

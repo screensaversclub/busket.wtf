@@ -33,6 +33,8 @@ export async function GET({ params }) {
 	try {
 		const { search } = params;
 
+		console.log(search);
+
 		if (!/^[0-9]{2,5}$/.test(search)) {
 			return json({ ok: true, data: [] });
 		}
