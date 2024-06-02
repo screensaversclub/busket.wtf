@@ -39,7 +39,7 @@ export async function GET({ params }) {
 
 		if (search.length === 5) {
 			//short circuit this if exactly bus code length
-			const busStop = await redis.hgetall(search);
+			const busStop = await redis.hgetall(`STOP_${search}`);
 
 			return json({
 				ok: true,
