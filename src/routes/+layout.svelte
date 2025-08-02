@@ -3,6 +3,7 @@
 	import '../app.css';
 	import Navbar from '$lib/Navbar.svelte';
 	import { pwaInfo } from 'virtual:pwa-info';
+	import { UmamiAnalytics } from '@lukulent/svelte-umami';
 	$: webManifestLink = pwaInfo ? pwaInfo.webManifest.linkTag : '';
 </script>
 
@@ -15,6 +16,11 @@
 		<Navbar />
 		<slot />
 	</div>
+
+	<UmamiAnalytics
+		websiteID="b009e657-7f2d-4e57-be06-caeaca951e86"
+		srcURL="https://umami-production-6250.up.railway.app/script.js"
+	/>
 </div>
 
 <style lang="postcss">

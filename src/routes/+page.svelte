@@ -2,7 +2,6 @@
 	import type { BusStop } from '$lib/lta-payload-types';
 	import { favs } from '$lib/favs-store';
 	import { browser } from '$app/environment';
-	import { UmamiAnalytics } from '@lukulent/svelte-umami';
 
 	let buscode_input = '';
 	let searching = false;
@@ -166,11 +165,6 @@
 			</div>
 		{/if}
 	</div>
-	<UmamiAnalytics
-		websiteID="b009e657-7f2d-4e57-be06-caeaca951e86"
-		srcURL="https://umami-production-6250.up.railway.app/script.js"
-		configuration={{ 'data-auto-track': false }}
-	/>
 </div>
 
 <style lang="postcss">

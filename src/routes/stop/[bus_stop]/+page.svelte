@@ -2,7 +2,6 @@
 	import { invalidateAll } from '$app/navigation';
 	import type { BusStop, BusStopArrival } from '$lib/lta-payload-types';
 	import NextbusSlot from './nextbus_slot.svelte';
-	import { UmamiAnalytics } from '@lukulent/svelte-umami';
 	import { favs } from '$lib/favs-store';
 
 	let reloadingData = false;
@@ -149,12 +148,6 @@
 			<p><a href="/">Try again?</a></p>
 		</div>
 	{/if}
-
-	<UmamiAnalytics
-		websiteID="b009e657-7f2d-4e57-be06-caeaca951e86"
-		srcURL="https://umami-production-6250.up.railway.app/script.js"
-		configuration={{ 'data-auto-track': false }}
-	/>
 </div>
 
 <style lang="postcss">
