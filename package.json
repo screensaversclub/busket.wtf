@@ -12,6 +12,7 @@
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
+		"@lukulent/svelte-umami": "^0.0.4",
 		"@sveltejs/adapter-auto": "^3.3.1",
 		"@sveltejs/adapter-vercel": "^5.8.1",
 		"@sveltejs/kit": "^2.27.0",
