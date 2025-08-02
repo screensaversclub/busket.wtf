@@ -3,6 +3,7 @@
 	import type { BusStop, BusStopArrival } from '$lib/lta-payload-types';
 	import NextbusSlot from './nextbus_slot.svelte';
 	import { favs } from '$lib/favs-store';
+	import { trackEvent } from '@lukulent/svelte-umami';
 
 	let reloadingData = false;
 	export let data:
@@ -54,7 +55,7 @@
 							!isFav ? ' border border-gray-600' : 'border-0 bg-pink-400'
 						}`}
 						on:click={() => {
-							if (data.ok === false) {
+							if (!data.ok) {
 								return;
 							}
 
@@ -63,14 +64,16 @@
 							if (isFav) {
 								favs.set(
 									_curFavs.filter((f) => {
-										if (data.ok === false) {
+										if (!data.ok) {
 											return false;
 										}
 										return f !== data.busStop.BusStopCode;
 									})
 								);
+								trackEvent('unfav', { stop: data.busStop.BusStopCode });
 							} else {
 								favs.set([..._curFavs, data.busStop.BusStopCode]);
+								trackEvent('fav', { stop: data.busStop.BusStopCode });
 							}
 						}}>&nbsp;</button
 					>
