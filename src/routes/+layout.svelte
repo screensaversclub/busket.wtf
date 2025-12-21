@@ -19,7 +19,7 @@
 
 	<UmamiAnalytics
 		websiteID="b009e657-7f2d-4e57-be06-caeaca951e86"
-		srcURL="https://umami-production-6250.up.railway.app/script.js"
+		srcURL="https://umami.screensavers.studio/script.js"
 	/>
 </div>
 
