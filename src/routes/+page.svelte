@@ -83,7 +83,7 @@
 			<input
 				type="string"
 				id="buscode_input"
-				placeholder="12129 or Bedok"
+				placeholder="12129 or Orchard"
 				bind:value={buscode_input}
 				on:input={() => {
 					searching = true;
