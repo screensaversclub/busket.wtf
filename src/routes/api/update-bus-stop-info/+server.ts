@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { createHash } from 'node:crypto';
 import { DATAMALL_BUS_STOPS_ENDPOINT } from '$lib/lta-endpoints.js';
 import { DATAMALL_API_KEY } from '$env/static/private';
 import type { BusStop } from '$lib/lta-payload-types';
@@ -29,8 +30,8 @@ const getBusStopData: (skip?: number, accum?: BusStop[]) => Promise<BusStop[]> =
 	}
 };
 
-export async function GET(req) {
-	const authHeader = req.request.headers.get('authorization');
+export async function GET({ request }: { request: Request }) {
+	const authHeader = request.headers.get('authorization');
 	if (
 		process.env.NODE_ENV === 'production' &&
 		(!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`)
@@ -39,18 +40,29 @@ export async function GET(req) {
 	}
 
 	try {
-		const d = await getBusStopData();
+		const stops = await getBusStopData();
 		const now = new Date();
 
-		d.forEach((stop) => {
-			redis.hset(`STOP_${stop.BusStopCode}`, stop);
-			redis.zrem('busstop_geos', stop.BusStopCode);
-			redis.geoadd('busstop_geos', stop.Longitude, stop.Latitude, stop.BusStopCode);
+		const pipeline = redis.pipeline();
+		stops.forEach((stop) => {
+			pipeline.hset(`STOP_${stop.BusStopCode}`, stop);
+			pipeline.zrem('busstop_geos', stop.BusStopCode);
+			pipeline.geoadd('busstop_geos', stop.Longitude, stop.Latitude, stop.BusStopCode);
 		});
+		await pipeline.exec();
 
-		redis.set('BUSSTOP-LAST-UPDATED', now.getTime());
+		const sorted = [...stops].sort((a, b) => a.BusStopCode.localeCompare(b.BusStopCode));
+		const manifestJson = JSON.stringify({ stops: sorted });
+		const etag = `"${createHash('sha1').update(manifestJson).digest('hex')}"`;
 
-		return json({ ok: true });
+		await redis
+			.pipeline()
+			.set('STOPS_MANIFEST_JSON', manifestJson)
+			.set('STOPS_MANIFEST_ETAG', etag)
+			.set('BUSSTOP-LAST-UPDATED', now.getTime())
+			.exec();
+
+		return json({ ok: true, count: stops.length, etag });
 	} catch (err) {
 		console.warn(err);
 		return json({ ok: false, err });

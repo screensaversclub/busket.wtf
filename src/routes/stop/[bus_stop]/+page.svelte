@@ -1,81 +1,102 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { onMount, onDestroy } from 'svelte';
 	import type { BusStop, BusStopArrival } from '$lib/lta-payload-types';
 	import NextbusSlot from './nextbus_slot.svelte';
 	import { favs } from '$lib/favs-store';
 	import { trackEvent } from '@lukulent/svelte-umami';
+	import { stops, manifestReady, loadManifest, findStop } from '$lib/manifest-store';
 
+	export let data: { busStopCode: string };
+
+	let busStop: BusStop | null = null;
+	let arrival: BusStopArrival | null = null;
+	let errored = false;
 	let reloadingData = false;
-	export let data:
-		| {
-				ok: false;
-		  }
-		| {
-				ok: true;
-				busStop: BusStop;
-				arrival: BusStopArrival;
-		  };
 
-	$: isFav = data.ok === false ? false : $favs.includes(data.busStop.BusStopCode);
+	$: code = data.busStopCode;
+	$: isFav = $favs.includes(code);
+	$: if ($manifestReady) {
+		const found = findStop($stops, code);
+		if (found) busStop = found;
+	}
 
-	setInterval(() => {
-		if (reloadingData === false) {
-			reloadingData = true;
-			invalidateAll().finally(() => {
-				setTimeout(() => {
-					reloadingData = false;
-				}, 500);
-			});
+	const loadArrival = async () => {
+		try {
+			const r = await fetch(`/api/bus-stop-arrival/${code}`);
+			const body = await r.json();
+			if (!body.ok) {
+				errored = true;
+				return;
+			}
+			arrival = body.arrival as BusStopArrival;
+			errored = false;
+		} catch (err) {
+			console.error(err);
+			errored = true;
 		}
-	}, 15000);
+	};
+
+	const refresh = async () => {
+		if (reloadingData) return;
+		reloadingData = true;
+		await loadArrival();
+		setTimeout(() => {
+			reloadingData = false;
+		}, 500);
+	};
+
+	let pollId: ReturnType<typeof setInterval> | undefined;
+
+	onMount(() => {
+		loadManifest();
+		loadArrival();
+		pollId = setInterval(() => {
+			refresh();
+		}, 15000);
+	});
+
+	onDestroy(() => {
+		if (pollId) clearInterval(pollId);
+	});
+
+	const toggleFav = () => {
+		const _curFavs = [...$favs];
+		if (isFav) {
+			favs.set(_curFavs.filter((f) => f !== code));
+			trackEvent('unfav', { stop: code });
+		} else {
+			favs.set([..._curFavs, code]);
+			trackEvent('fav', { stop: code });
+		}
+	};
 </script>
 
 <svelte:head>
-	<title>{data.ok ? data.busStop.BusStopCode : 'Error'} | Busket</title>
+	<title>{code} | Busket</title>
 </svelte:head>
 <div id="wrapper">
-	{#if data.ok}
+	{#if errored && arrival === null}
+		<div class="flex flex-col items-center py-16 gap-8">
+			<h1 class="text-xl font-medium">Error terror 👻</h1>
+			<p><a href="/">Try again?</a></p>
+		</div>
+	{:else}
 		<div class="w-full max-w-[600px] mx-auto">
 			<div class="px-2 pt-8 pb-2 text-center">
 				<h1 class="relative mb-0 text-3xl font-medium">
 					<a
 						href="#refreshData"
-						on:click={async (e) => {
+						on:click={(e) => {
 							e.preventDefault();
-							reloadingData = true;
-							await invalidateAll();
-							setTimeout(() => {
-								reloadingData = false;
-							}, 500);
-						}}>{data.busStop.BusStopCode}</a
+							refresh();
+						}}>{code}</a
 					>
 
 					<button
 						class={`w-2 h-2 absolute left-[calc(50%_-_4rem)] top-[50%] -translate-y-[50%] -translate-x-[50%] rotate-[45deg] ${
 							!isFav ? ' border border-gray-600' : 'border-0 bg-pink-400'
 						}`}
-						on:click={() => {
-							if (!data.ok) {
-								return;
-							}
-
-							const _curFavs = [...$favs];
-
-							if (isFav) {
-								favs.set(
-									_curFavs.filter((f) => {
-										if (!data.ok) {
-											return false;
-										}
-										return f !== data.busStop.BusStopCode;
-									})
-								);
-								trackEvent('unfav', { stop: data.busStop.BusStopCode });
-							} else {
-								favs.set([..._curFavs, data.busStop.BusStopCode]);
-								trackEvent('fav', { stop: data.busStop.BusStopCode });
-							}
-						}}>&nbsp;</button
+						on:click={toggleFav}>&nbsp;</button
 					>
 					{#if reloadingData}
 						<b
@@ -83,28 +104,42 @@
 						></b>
 					{:else}
 						<button
-							on:click={async () => {
-								reloadingData = true;
-								await invalidateAll();
-								setTimeout(() => {
-									reloadingData = false;
-								}, 500);
-							}}
+							on:click={refresh}
 							class=" w-3 h-3 border-2 bg-yellow-500 border-yellow-300 rounded-full absolute left-[calc(50%_+_4rem)] top-[50%] -translate-x-[50%] -translate-y-[50%] text-lg"
 							>&nbsp;</button
 						>
 					{/if}
 				</h1>
-				<h2>{data.busStop.Description} on {data.busStop.RoadName}</h2>
+				{#if busStop}
+					<h2>{busStop.Description} on {busStop.RoadName}</h2>
+				{:else}
+					<h2 class="opacity-60"><span class="skeleton-text">Loading stop info…</span></h2>
+				{/if}
 			</div>
 			<div>
-				{#if data.arrival.Services.length === 0}
+				{#if arrival === null}
+					<div class="flex flex-col gap-1 max-h-[calc(100vh_-_165px)] overflow-y-scroll pb-8 px-2">
+						{#each Array(4) as _, i (i)}
+							<div class="p-2 bg-white border border-yellow-200 rounded">
+								<div class="grid grid-cols-4 gap-2 items-center">
+									<div class="flex items-center gap-2">
+										<b class="block w-3 h-3 bg-yellow-100 rounded-full"></b>
+										<span class="skeleton-block h-5 w-10"></span>
+									</div>
+									<span class="skeleton-block h-5 w-12"></span>
+									<span class="skeleton-block h-5 w-12"></span>
+									<span class="skeleton-block h-5 w-12"></span>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{:else if arrival.Services.length === 0}
 					<p class="flex h-[40vh] items-center text-center justify-center">
 						No bus service available at this time.
 					</p>
 				{:else}
 					<div class="flex flex-col gap-1 max-h-[calc(100vh_-_165px)] overflow-y-scroll pb-8 px-2">
-						{#each data.arrival.Services as service (service.ServiceNo)}
+						{#each arrival.Services as service (service.ServiceNo)}
 							<div class="p-2 bg-white border border-yellow-400 rounded">
 								<div class="grid grid-cols-4">
 									<div class="flex items-center gap-2">
@@ -145,11 +180,6 @@
 				{/if}
 			</div>
 		</div>
-	{:else}
-		<div class="flex flex-col items-center py-16 gap-8">
-			<h1 class="text-xl font-medium">Error terror 👻</h1>
-			<p><a href="/">Try again?</a></p>
-		</div>
 	{/if}
 </div>
 
@@ -173,6 +203,26 @@
 
 		100% {
 			@apply w-3 h-3 opacity-100;
+		}
+	}
+
+	.skeleton-block {
+		@apply inline-block bg-yellow-100 rounded;
+		animation: shimmer 1.2s infinite ease-in-out;
+	}
+
+	.skeleton-text {
+		@apply inline-block bg-yellow-100 rounded px-2;
+		animation: shimmer 1.2s infinite ease-in-out;
+	}
+
+	@keyframes shimmer {
+		0%,
+		100% {
+			opacity: 0.6;
+		}
+		50% {
+			opacity: 1;
 		}
 	}
 </style>

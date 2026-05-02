@@ -2,101 +2,73 @@
 	import type { BusStop } from '$lib/lta-payload-types';
 	import { favs } from '$lib/favs-store';
 	import { browser } from '$app/environment';
+	import {
+		stops,
+		manifestReady,
+		loadManifest,
+		searchStops,
+		nearbyStops,
+		findStop
+	} from '$lib/manifest-store';
 
 	let buscode_input = '';
 	let searching = false;
 	let search_results: BusStop[] = [];
-
-	let search_timeout_id: ReturnType<typeof setTimeout>;
-
-	let favBusStops: BusStop[] = [];
-
-	const fetchFavBusStops = async () => {
-		const fetchPromises = $favs.map((code) => {
-			return (async () => {
-				const r = await fetch(`/api/bus-stop/${code}`);
-				const data = await r.json();
-				return data;
-			})();
-		});
-		favBusStops = (await Promise.all(fetchPromises))
-			.map((res) => (res.ok === true ? res.busStop : null))
-			.filter((a) => a !== null) as BusStop[];
-	};
+	let locating = false;
 
 	if (browser) {
-		setTimeout(() => {
-			fetchFavBusStops();
-		}, 1000);
+		loadManifest();
 	}
 
-	const search = async () => {
-		if (!/^[0-9]{2,5}$/.test(buscode_input)) {
+	$: favBusStops = $manifestReady
+		? ($favs.map((c) => findStop($stops, c)).filter(Boolean) as BusStop[])
+		: [];
+
+	const runSearch = () => {
+		const q = buscode_input.trim();
+		if (!q) {
 			searching = false;
 			search_results = [];
 			return;
 		}
-
-		try {
-			const _r = await fetch(`/api/bus-stop-search/${buscode_input}`);
-			const data = await _r.json();
-			search_results = data.data;
-			searching = false;
-		} catch (err) {
-			console.error(err);
-			search_results = [];
-			searching = false;
-		}
-	};
-
-	const debounced_search = () => {
-		if (typeof search_timeout_id === 'number') {
-			clearTimeout(search_timeout_id);
-		}
-
-		search_timeout_id = setTimeout(() => {
-			search();
-		}, 500);
+		search_results = searchStops($stops, q, 20);
+		searching = false;
 	};
 
 	const findNearbyStops = () => {
 		searching = true;
+		locating = true;
 		buscode_input = '';
 		if (!navigator.geolocation) {
 			alert('Oops, geolocation not available');
 			searching = false;
-		} else {
-			navigator.geolocation.getCurrentPosition(
-				(position) => {
-					fetch(`/api/bus-stop-near`, {
-						method: 'POST',
-						headers: {
-							'Content-Type': 'application-json'
-						},
-						body: JSON.stringify({
-							lat: position.coords.latitude,
-							long: position.coords.longitude
-						})
-					})
-						.then((r) => {
-							r.json().then((value) => {
-								search_results = [...value.data];
-								searching = false;
-							});
-						})
-						.catch((err) => {
-							console.error(err);
-							alert('There was an error locating you');
-							searching = false;
-						});
-				},
-				(err) => {
-					console.error(err);
-					alert('There was an error locating you');
-					searching = false;
-				}
-			);
+			locating = false;
+			return;
 		}
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				const results = nearbyStops(
+					$stops,
+					position.coords.latitude,
+					position.coords.longitude,
+					10
+				);
+				search_results = results;
+				searching = false;
+				locating = false;
+			},
+			(err) => {
+				console.error(err);
+				alert('There was an error locating you');
+				searching = false;
+				locating = false;
+			},
+			{ enableHighAccuracy: false, maximumAge: 60_000, timeout: 10_000 }
+		);
+	};
+
+	const prefetchArrival = (code: string) => {
+		fetch(`/api/bus-stop-arrival/${code}`).catch(() => {});
 	};
 </script>
 
@@ -106,17 +78,16 @@
 
 <div id="wrapper">
 	<div id="interface">
-		<label for="buscode_input">Enter bus stop code:</label>
+		<label for="buscode_input">Search bus stops:</label>
 		<div class="flex items-center gap-2">
 			<input
 				type="string"
-				pattern="[0-9]*"
 				id="buscode_input"
-				placeholder="12129"
+				placeholder="12129 or Bedok"
 				bind:value={buscode_input}
 				on:input={() => {
 					searching = true;
-					debounced_search();
+					runSearch();
 				}}
 			/>
 			<button
@@ -130,7 +101,7 @@
 			<div class="results_wrapper show">
 				{#if searching === true}
 					<p class="py-2 text-center">
-						<span>I'm looking...</span>
+						<span>{locating ? 'Locating you...' : "I'm looking..."}</span>
 					</p>
 				{:else if search_results.length === 0}
 					<p class="py-2 text-center">
@@ -140,7 +111,10 @@
 					<ul>
 						{#each search_results as result (result.BusStopCode)}
 							<li>
-								<a href={`/stop/${result.BusStopCode}`}
+								<a
+									href={`/stop/${result.BusStopCode}`}
+									on:pointerenter={() => prefetchArrival(result.BusStopCode)}
+									on:touchstart={() => prefetchArrival(result.BusStopCode)}
 									><h4>{result.Description}<b>{result.BusStopCode}</b></h4>
 									<p>{result.RoadName}</p></a
 								>
@@ -155,7 +129,10 @@
 				<ul>
 					{#each favBusStops as stop (stop.BusStopCode)}
 						<li>
-							<a href={`/stop/${stop.BusStopCode}`}
+							<a
+								href={`/stop/${stop.BusStopCode}`}
+								on:pointerenter={() => prefetchArrival(stop.BusStopCode)}
+								on:touchstart={() => prefetchArrival(stop.BusStopCode)}
 								><h4>{stop.Description}<b>{stop.BusStopCode}</b></h4>
 								<p>{stop.RoadName}</p></a
 							>
@@ -176,7 +153,7 @@
 		@apply top-[15%] left-[50%] -translate-x-[50%] -translate-y-[50%] absolute flex flex-col gap-2 items-center text-xl;
 
 		input {
-			@apply text-3xl border border-yellow-500 w-[8em] rounded text-center p-2;
+			@apply text-3xl border border-yellow-500 w-[10em] rounded text-center p-2;
 		}
 	}
 
