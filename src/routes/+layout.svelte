@@ -1,6 +1,5 @@
-<script lang="ts">
+<script>
 	/// <reference types="vite-plugin-pwa/info" />
-	/// <reference types="vite-plugin-pwa/svelte" />
 	import '../app.css';
 	import { onMount } from 'svelte';
 	import Navbar from '$lib/Navbar.svelte';
