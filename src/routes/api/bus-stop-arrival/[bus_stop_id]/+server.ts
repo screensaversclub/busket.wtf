@@ -22,7 +22,7 @@ export const GET: RequestHandler = async ({ params, setHeaders }) => {
 		const arrivalData = (await r.json()) as BusStopArrival;
 
 		setHeaders({
-			'cache-control': 'public, max-age=15, stale-while-revalidate=45'
+			'cache-control': 'public, max-age=10, s-maxage=30, stale-while-revalidate=30'
 		});
 
 		return json({
